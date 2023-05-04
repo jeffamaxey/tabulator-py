@@ -35,11 +35,11 @@ class GsheetParser(Parser):
         match = re.search(r'.*/d/(?P<key>[^/]+)/.*?(?:gid=(?P<gid>\d+))?$', source)
         key, gid = '', ''
         if match:
-            key = match.group('key')
-            gid = match.group('gid')
-        url = url % (key, key)
+            key = match['key']
+            gid = match['gid']
+        url %= (key, key)
         if gid:
-            url = '%s&gid=%s' % (url, gid)
+            url = f'{url}&gid={gid}'
         self.__stream = Stream(
             url, format='csv', encoding=encoding, force_parse=self.__force_parse).open()
         self.__extended_rows = self.__stream.iter(extended=True)

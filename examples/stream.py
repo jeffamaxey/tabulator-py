@@ -74,8 +74,10 @@ with Stream(source, headers='row1', format='csv') as stream:
 
 
 print('\nLoad from http scheme:')
-source = 'https://raw.githubusercontent.com'
-source += '/okfn/tabulator-py/master/data/table.csv'
+source = (
+    'https://raw.githubusercontent.com'
+    + '/okfn/tabulator-py/master/data/table.csv'
+)
 with Stream(source, headers='row1') as stream:
     print(stream.headers)
     for row in stream:

@@ -88,7 +88,7 @@ def test_parser_ods():
         (3, None, [2.0, '中国人']),
     ]
 
-    assert len(list(parser.extended_rows)) == 0
+    assert not list(parser.extended_rows)
     parser.reset()
     assert len(list(parser.extended_rows)) == 3
 

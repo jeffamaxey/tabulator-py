@@ -61,9 +61,7 @@ class JSONParser(Parser):
     # Private
 
     def __iter_extended_rows(self):
-        path = 'item'
-        if self.__property is not None:
-            path = '%s.item' % self.__property
+        path = f'{self.__property}.item' if self.__property is not None else 'item'
         items = ijson.items(self.__bytes, path)
         for row_number, item in enumerate(items, start=1):
             if isinstance(item, (tuple, list)):
@@ -75,8 +73,7 @@ class JSONParser(Parser):
                     keys.append(key)
                     values.append(item[key])
                 yield (row_number, list(keys), list(values))
-            else:
-                if not self.__force_parse:
-                    message = 'JSON item has to be list or dict'
-                    raise exceptions.SourceError(message)
+            elif self.__force_parse:
                 yield (row_number, None, [])
+            else:
+                raise exceptions.SourceError('JSON item has to be list or dict')

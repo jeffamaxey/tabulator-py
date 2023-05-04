@@ -104,7 +104,7 @@ def test_stream_headers_inline_keyed():
 def test_stream_headers_inline_keyed_headers_is_none():
     source = [{'id': '1', 'name': 'english'}, {'id': '2', 'name': '中国人'}]
     with Stream(source, headers=None) as stream:
-        assert stream.headers == None
+        assert stream.headers is None
         assert list(stream.iter(extended=True)) == [
             (1, None, ['1', 'english']),
             (2, None, ['2', '中国人'])]
@@ -700,7 +700,7 @@ def test_stream_post_parse_headers():
     # Stream
     source = [['id', 'name'], ['1', 'english'], ['2', '中国人']]
     with Stream(source, post_parse=[extract_headers]) as stream:
-        assert stream.headers == None
+        assert stream.headers is None
         assert stream.read(extended=True) == [
             (2, ['id', 'name'], ['1', 'english']),
             (3, ['id', 'name'], ['2', '中国人'])]

@@ -218,7 +218,7 @@ class Stream(object):
                 elif directive['type'] == 'preset' and directive['value'] == 'blank':
                     self.__pick_rows_by_presets['blank'] = True
                 else:
-                    raise ValueError('Not supported pick rows: %s' % directive)
+                    raise ValueError(f'Not supported pick rows: {directive}')
             else:
                 self.__pick_rows_by_comments.append(str(directive))
 
@@ -237,7 +237,7 @@ class Stream(object):
                 elif directive['type'] == 'preset' and directive['value'] == 'blank':
                     self.__skip_rows_by_presets['blank'] = True
                 else:
-                    raise ValueError('Not supported skip rows: %s' % directive)
+                    raise ValueError(f'Not supported skip rows: {directive}')
             else:
                 self.__skip_rows_by_comments.append(str(directive))
 
@@ -319,10 +319,12 @@ class Stream(object):
         assert self.__hashing_algorithm in config.SUPPORTED_HASHING_ALGORITHMS
 
         # Validate compression
-        if self.__compression:
-            if self.__compression not in config.SUPPORTED_COMPRESSION:
-                message = 'Not supported compression "%s"' % self.__compression
-                raise exceptions.CompressionError(message)
+        if (
+            self.__compression
+            and self.__compression not in config.SUPPORTED_COMPRESSION
+        ):
+            message = f'Not supported compression "{self.__compression}"'
+            raise exceptions.CompressionError(message)
 
         # Get scheme and format if not already given
         compression = None
@@ -344,10 +346,9 @@ class Stream(object):
             loader_class = self.__custom_loaders.get(scheme)
             if loader_class is None:
                 if scheme not in config.LOADERS:
-                    message = 'Scheme "%s" is not supported' % scheme
+                    message = f'Scheme "{scheme}" is not supported'
                     raise exceptions.SchemeError(message)
-                loader_path = config.LOADERS[scheme]
-                if loader_path:
+                if loader_path := config.LOADERS[scheme]:
                     loader_class = helpers.import_attribute(loader_path)
             if loader_class is not None:
                 loader_options = helpers.extract_options(options, loader_class.options)
@@ -366,7 +367,7 @@ class Stream(object):
                     name = options['filename']
                     del options['filename']
                 with archive.open(name) as file:
-                    source = tempfile.NamedTemporaryFile(suffix='.' + name)
+                    source = tempfile.NamedTemporaryFile(suffix=f'.{name}')
                     for line in file:
                         source.write(line)
                     source.seek(0)
@@ -375,18 +376,14 @@ class Stream(object):
             format = self.__format or helpers.detect_scheme_and_format(source.name)[1]
             scheme = 'stream'
 
-        # Gzip compression
         elif compression == 'gz' and six.PY3:
-            name = ''
-            if isinstance(source, str):
-                name = source.replace('.gz', '')
+            name = source.replace('.gz', '') if isinstance(source, str) else ''
             source = gzip.open(self.__loader.load(source, mode='b'))
             # We redefine loader/format/schema after decompression
             self.__loader = StreamLoader(bytes_sample_size=self.__bytes_sample_size)
             format = self.__format or helpers.detect_scheme_and_format(name)[1]
             scheme = 'stream'
 
-        # Not supported compression
         elif compression:
             message = 'Compression "%s" is not supported for your Python version'
             raise exceptions.TabulatorException(message % compression)
@@ -405,7 +402,7 @@ class Stream(object):
                 chars = self.__loader.load(source)
                 chars.close()
                 # Otherwise it's a format error
-                message = 'Format "%s" is not supported' % format
+                message = f'Format "{format}" is not supported'
                 raise exceptions.FormatError(message)
             parser_class = helpers.import_attribute(config.PARSERS[format])
         parser_options = helpers.extract_options(options, parser_class.options)
@@ -416,7 +413,7 @@ class Stream(object):
         # Bad options
         if options:
             message = 'Not supported option(s) "%s" for scheme "%s" and format "%s"'
-            message = message % (', '.join(options), scheme, format)
+            message %= (', '.join(options), scheme, format)
             warnings.warn(message, UserWarning)
 
         # Open and setup
@@ -528,9 +525,7 @@ class Stream(object):
             str: fragment
 
         """
-        if self.__parser:
-            return getattr(self.__parser, 'fragment', None)
-        return None
+        return getattr(self.__parser, 'fragment', None) if self.__parser else None
 
     @property
     def dialect(self):
@@ -540,9 +535,7 @@ class Stream(object):
             dict/None: dialect
 
         """
-        if self.__parser:
-            return getattr(self.__parser, 'dialect', {})
-        return None
+        return getattr(self.__parser, 'dialect', {}) if self.__parser else None
 
     @property
     def size(self):
@@ -578,12 +571,9 @@ class Stream(object):
             list[]: sample
 
         """
-        sample = []
         iterator = iter(self.__sample_extended_rows)
         iterator = self.__apply_processors(iterator)
-        for row_number, headers, row in iterator:
-            sample.append(row)
-        return sample
+        return [row for row_number, headers, row in iterator]
 
     @property
     def field_positions(self):
@@ -591,9 +581,11 @@ class Stream(object):
             self.__field_positions = []
             if self.__headers:
                 size = len(self.__headers) + len(self.__ignored_headers_indexes)
-                for index in range(size):
-                    if index not in self.__ignored_headers_indexes:
-                        self.__field_positions.append(index + 1)
+                self.__field_positions.extend(
+                    index + 1
+                    for index in range(size)
+                    if index not in self.__ignored_headers_indexes
+                )
         return self.__field_positions
 
     @property
@@ -714,7 +706,7 @@ class Stream(object):
         writer_class = self.__custom_writers.get(format)
         if writer_class is None:
             if format not in config.WRITERS:
-                message = 'Format "%s" is not supported' % format
+                message = f'Format "{format}" is not supported'
                 raise exceptions.FormatError(message)
             writer_class = helpers.import_attribute(config.WRITERS[format])
 
@@ -722,7 +714,7 @@ class Stream(object):
         writer_options = helpers.extract_options(options, writer_class.options)
         if options:
             message = 'Not supported options "%s" for format "%s"'
-            message = message % (', '.join(options), format)
+            message %= (', '.join(options), format)
             raise exceptions.TabulatorException(message)
 
         # Write data to target
@@ -742,10 +734,13 @@ class Stream(object):
         for _ in range(self.__sample_size):
             try:
                 row_number, headers, row = next(self.__parser.extended_rows)
-                if self.__headers_row and self.__headers_row >= row_number:
-                    if self.__check_if_row_for_skipping(row_number, headers, row):
-                        self.__headers_row += 1
-                        self.__headers_row_last += 1
+                if (
+                    self.__headers_row
+                    and self.__headers_row >= row_number
+                    and self.__check_if_row_for_skipping(row_number, headers, row)
+                ):
+                    self.__headers_row += 1
+                    self.__headers_row_last += 1
                 self.__sample_extended_rows.append((row_number, headers, row))
             except StopIteration:
                 break
