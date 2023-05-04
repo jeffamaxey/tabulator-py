@@ -42,10 +42,4 @@ class TextLoader(Loader):
             bytes = helpers.BytesStatsWrapper(bytes, self.__stats)
 
         # Return bytes
-        if mode == 'b':
-            return bytes
-
-        # Prepare chars
-        chars = io.TextIOWrapper(bytes, encoding)
-
-        return chars
+        return bytes if mode == 'b' else io.TextIOWrapper(bytes, encoding)

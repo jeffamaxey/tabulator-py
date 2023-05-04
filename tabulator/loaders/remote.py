@@ -81,10 +81,7 @@ class RemoteLoader(Loader):
             bytes.seek(0)
             encoding = helpers.detect_encoding(sample, encoding)
 
-        # Prepare chars
-        chars = io.TextIOWrapper(bytes, encoding)
-
-        return chars
+        return io.TextIOWrapper(bytes, encoding)
 
 
 # Internal

@@ -67,7 +67,7 @@ class NDJSONParser(Parser):
             elif isinstance(row, dict):
                 keys, values = zip(*sorted(row.items()))
                 yield (row_number, list(keys), list(values))
-            else:
-                if not self.__force_parse:
-                    raise exceptions.SourceError('JSON item has to be list or dict')
+            elif self.__force_parse:
                 yield (row_number, None, [])
+            else:
+                raise exceptions.SourceError('JSON item has to be list or dict')

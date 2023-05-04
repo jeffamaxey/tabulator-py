@@ -35,7 +35,7 @@ def test_stream_s3(s3_client, bucket):
         Key='table.csv')
 
     # Check the file
-    with Stream('s3://%s/table.csv' % bucket) as stream:
+    with Stream(f's3://{bucket}/table.csv') as stream:
         assert stream.read() == [['id', 'name'], ['1', 'english'], ['2', '中国人']]
 
 
@@ -52,7 +52,7 @@ def test_stream_s3_endpoint_url(s3_client, bucket):
         Key='table.csv')
 
     # Check the file
-    with Stream('s3://%s/table.csv' % bucket, s3_endpoint_url=S3_ENDPOINT_URL) as stream:
+    with Stream(f's3://{bucket}/table.csv', s3_endpoint_url=S3_ENDPOINT_URL) as stream:
         assert stream.read() == [['id', 'name'], ['1', 'english'], ['2', '中国人']]
 
 
@@ -60,7 +60,7 @@ def test_stream_s3_endpoint_url(s3_client, bucket):
 @pytest.mark.skip
 def test_stream_s3_non_existent_file(s3_client, bucket):
     with pytest.raises(exceptions.IOError):
-        Stream('s3://%s/table.csv' % bucket).open()
+        Stream(f's3://{bucket}/table.csv').open()
 
 
 # Fixtures
@@ -68,13 +68,12 @@ def test_stream_s3_non_existent_file(s3_client, bucket):
 @pytest.fixture(scope='module')
 def s3_client():
     subprocess.Popen('moto_server', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    s3_client = boto3.client('s3', endpoint_url=S3_ENDPOINT_URL)
-    yield s3_client
+    yield boto3.client('s3', endpoint_url=S3_ENDPOINT_URL)
     os.system('pkill moto_server')
 
 
 @pytest.fixture
 def bucket(s3_client):
-    bucket = 'bucket_%s' % ''.join(random.choice(string.digits) for _ in range(16))
+    bucket = f"bucket_{''.join(random.choice(string.digits) for _ in range(16))}"
     s3_client.create_bucket(Bucket=bucket, ACL='public-read')
     return bucket

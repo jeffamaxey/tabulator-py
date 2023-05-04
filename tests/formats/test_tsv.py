@@ -38,7 +38,7 @@ def test_parser_tsv():
         (3, None, ['2', '中国人']),
         (4, None, ['3', None])]
 
-    assert len(list(parser.extended_rows)) == 0
+    assert not list(parser.extended_rows)
     parser.reset()
     assert len(list(parser.extended_rows)) == 4
 

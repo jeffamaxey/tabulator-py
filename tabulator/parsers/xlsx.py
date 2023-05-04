@@ -265,9 +265,7 @@ def convert_excel_date_format_string(excel_date):
 
         is_escape_char = c == EXCEL_ESCAPE_CHAR
         # The am/pm and a/p code add some complications, need to make sure we are not that code
-        is_misc_char = c in EXCEL_MISC_CHARS and (
-            c != "/" or (ec != "am" and ec != "a")
-        )
+        is_misc_char = c in EXCEL_MISC_CHARS and (c != "/" or ec not in ["am", "a"])
         new_excel_code = False
 
         # Handle a new code without a different characeter in between
@@ -287,7 +285,7 @@ def convert_excel_date_format_string(excel_date):
         if (is_escape_char or is_misc_char or new_excel_code) and ec:
             # Checking if the previous code should have been minute or month
             if checking_minute_or_month:
-                if ec == "ss" or ec == "s":
+                if ec in ["ss", "s"]:
                     # It should be a minute!
                     minute_or_month_buffer = (
                         EXCEL_MINUTE_CODES[prev_code] + minute_or_month_buffer
@@ -303,10 +301,9 @@ def convert_excel_date_format_string(excel_date):
 
             if ec in EXCEL_CODES:
                 python_date += EXCEL_CODES[ec]
-            # Handle months/minutes differently
             elif ec in EXCEL_MINUTE_CODES:
                 # If preceded by hours, we know this is referring to minutes
-                if prev_code == "h" or prev_code == "hh":
+                if prev_code in ["h", "hh"]:
                     python_date += EXCEL_MINUTE_CODES[ec]
                 else:
                     # Have to check if the next code is ss or s
@@ -339,7 +336,7 @@ def convert_excel_date_format_string(excel_date):
         if ec in EXCEL_CODES:
             python_date += EXCEL_CODES[ec]
         elif ec in EXCEL_MINUTE_CODES:
-            if prev_code == "h" or prev_code == "hh":
+            if prev_code in ["h", "hh"]:
                 python_date += EXCEL_MINUTE_CODES[ec]
             else:
                 python_date += EXCEL_MONTH_CODES[ec]
@@ -391,7 +388,6 @@ def convert_excel_number_format_string(
         # No decimals
         new_value = "{0:.0f}".format(value)
 
-    # Currently we do not support "engineering notation"
     elif re.match(r"^#+0*E\+0*$", code[1]):
         return value
     elif re.match(r"^0*E\+0*$", code[1]):
@@ -420,47 +416,43 @@ def convert_excel_number_format_string(
         string_format_code = "{0:." + str(len(decimal_section)) + "f}"
         new_value = string_format_code.format(value)
         if number_hash > 0:
-            for i in range(number_hash):
+            for _ in range(number_hash):
                 if new_value.endswith("0"):
                     new_value = new_value[:-1]
-    if percentage:
-        return new_value + "%"
-
-    return new_value
+    return f"{new_value}%" if percentage else new_value
 
 
 def extract_row_values(
     row, preserve_formatting=False, adjust_floating_point_error=False,
 ):
-    if preserve_formatting:
-        values = []
-        for cell in row:
-            number_format = cell.number_format or ""
-            value = cell.value
+    if not preserve_formatting:
+        return [cell.value for cell in row]
+    values = []
+    for cell in row:
+        number_format = cell.number_format or ""
+        value = cell.value
 
-            if isinstance(cell.value, datetime.datetime) or isinstance(
-                cell.value, datetime.time
+        if isinstance(cell.value, (datetime.datetime, datetime.time)):
+            if temporal_format := convert_excel_date_format_string(
+                number_format
             ):
-                temporal_format = convert_excel_date_format_string(number_format)
-                if temporal_format:
-                    value = cell.value.strftime(temporal_format)
-            elif (
-                adjust_floating_point_error
-                and isinstance(cell.value, float)
-                and number_format == "General"
+                value = cell.value.strftime(temporal_format)
+        elif (
+            adjust_floating_point_error
+            and isinstance(cell.value, float)
+            and number_format == "General"
+        ):
+            # We have a float with format General
+            # Calculate the number of integer digits
+            integer_digits = len(str(int(cell.value)))
+            # Set the precision to 15 minus the number of integer digits
+            precision = 15 - (integer_digits)
+            value = round(cell.value, precision)
+        elif isinstance(cell.value, (int, float)):
+            if new_value := convert_excel_number_format_string(
+                number_format,
+                cell.value,
             ):
-                # We have a float with format General
-                # Calculate the number of integer digits
-                integer_digits = len(str(int(cell.value)))
-                # Set the precision to 15 minus the number of integer digits
-                precision = 15 - (integer_digits)
-                value = round(cell.value, precision)
-            elif isinstance(cell.value, (int, float)):
-                new_value = convert_excel_number_format_string(
-                    number_format, cell.value,
-                )
-                if new_value:
-                    value = new_value
-            values.append(value)
-        return values
-    return list(cell.value for cell in row)
+                value = new_value
+        values.append(value)
+    return values

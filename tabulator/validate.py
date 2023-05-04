@@ -34,10 +34,9 @@ def validate(source, scheme=None, format=None):
     format = format or detected_format
 
     # Validate scheme and format
-    if scheme is not None:
-        if scheme not in config.LOADERS:
-            raise exceptions.SchemeError('Scheme "%s" is not supported' % scheme)
+    if scheme is not None and scheme not in config.LOADERS:
+        raise exceptions.SchemeError(f'Scheme "{scheme}" is not supported')
     if format not in config.PARSERS:
-        raise exceptions.FormatError('Format "%s" is not supported' % format)
+        raise exceptions.FormatError(f'Format "{format}" is not supported')
 
     return True

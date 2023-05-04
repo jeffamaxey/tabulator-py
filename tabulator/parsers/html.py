@@ -67,11 +67,7 @@ class HTMLTableParser(Parser):
         page = pq(self.__chars.read(), parser='html')
 
         # Find required table
-        if self.__selector:
-            table = pq(page.find(self.__selector)[0])
-        else:
-            table = page
-
+        table = pq(page.find(self.__selector)[0]) if self.__selector else page
         # Extract headers
         rows = (
             table.children('thead').children('tr') +

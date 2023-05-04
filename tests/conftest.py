@@ -17,5 +17,5 @@ def database_url(tmpdir):
     conn.execute('CREATE TABLE data (id INTEGER PRIMARY KEY, name TEXT)')
     conn.execute('INSERT INTO data VALUES (1, "english"), (2, "中国人")')
     conn.commit()
-    yield 'sqlite:///%s' % path
+    yield f'sqlite:///{path}'
     conn.close()

@@ -43,7 +43,7 @@ def detect_scheme_and_format(source):
 
     # Format: sql
     for sql_scheme in config.SQL_SCHEMES:
-        if source.startswith('%s://' % sql_scheme):
+        if source.startswith(f'{sql_scheme}://'):
             return (None, 'sql')
 
     # General
@@ -163,8 +163,7 @@ def import_attribute(path):
     """
     module_name, attribute_name = path.rsplit('.', 1)
     module = import_module(module_name)
-    attribute = getattr(module, attribute_name)
-    return attribute
+    return getattr(module, attribute_name)
 
 
 def extract_options(options, names):

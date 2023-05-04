@@ -121,7 +121,7 @@ def test_parser_xls():
         (2, None, [1, 'english']),
         (3, None, [2, '中国人'])]
 
-    assert len(list(parser.extended_rows)) == 0
+    assert not list(parser.extended_rows)
     parser.reset()
     assert len(list(parser.extended_rows)) == 3
 

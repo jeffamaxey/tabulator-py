@@ -68,9 +68,7 @@ def cli(source, limit, **options):
     # Read the table
     try:
         with tabulator.Stream(source, **options) as stream:
-            cast = str
-            if six.PY2:
-                cast = unicode  # noqa
+            cast = unicode if six.PY2 else str
             if stream.headers:
                 click.echo(click.style(', '.join(map(cast, stream.headers)), bold=True))
             for count, row in enumerate(stream, start=1):
@@ -78,5 +76,5 @@ def cli(source, limit, **options):
                 if count == limit:
                     break
     except exceptions.TabulatorException as exception:
-        click.echo('[error] %s' % str(exception))
+        click.echo(f'[error] {str(exception)}')
         exit(1)

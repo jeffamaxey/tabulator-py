@@ -65,7 +65,7 @@ def test_datapackage_parser():
         (2, ['id', 'name'], [2, '中国人']),
     ]
 
-    assert len(list(parser.extended_rows)) == 0
+    assert not list(parser.extended_rows)
     parser.reset()
     assert len(list(parser.extended_rows)) == 2
 
